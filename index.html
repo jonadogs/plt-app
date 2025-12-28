@@ -63,18 +63,23 @@
 
       ctx.strokeStyle = "black";
 
-      // 描画
-      lines.forEach(pts => {
-        ctx.beginPath();
-        pts.forEach((p, i) => {
-          const x = 20 + (p.x - minX) * scale;
-          const y = 20 + (maxY - p.y) * scale; // Y 反転
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-      });
-    }
-  </script>
-</body>
-</html>
+<script>
+function drawShape() {
+  console.log("描画開始"); // ← 動作確認用
+
+  // canvas や ctx がここより前で定義されてる前提
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 描画
+  lines.forEach(pts => {
+    ctx.beginPath();
+    pts.forEach((p, i) => {
+      const x = 20 + (p.x - minX) * scale;
+      const y = 20 + (maxY - p.y) * scale; // Y反転
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  });
+}
+</script>
