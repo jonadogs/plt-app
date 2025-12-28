@@ -14,16 +14,19 @@
 <body>
 
 <h1>Paste To Shape</h1>
-<p>生データを貼って「描画」を押すだけで図形化されます。</p>
+<p>生データを貼り付けて「描画」を押すだけ。</p>
 
-<textarea id="rawInput" placeholder="ここに生データを貼り付け"></textarea>
-<br>
+<textarea id="rawInput" placeholder="ここに plt 生データを貼り付け"></textarea><br>
 <button onclick="drawShape()">描画</button>
 
 <canvas id="shapeCanvas" width="800" height="800"></canvas>
 
 <script>
-function drawShape() {
+/* ===============================
+   Paste To Shape : Final Version
+   =============================== */
+
+window.drawShape = function () {
   console.log("描画開始");
 
   const raw = document.getElementById("rawInput").value;
@@ -32,7 +35,7 @@ function drawShape() {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.lineWidth = 2;
-  ctx.strokeStyle = "black";
+  ctx.strokeStyle = "#000";
 
   // BZ1 の座標抽出
   const regex = /BZ1,([-0-9,]+)/g;
@@ -49,41 +52,40 @@ function drawShape() {
   }
 
   if (lines.length === 0) {
-    alert("BZ1 の座標データが見つかりませんでした。");
+    alert("BZ1 の座標データが見つかりません");
     return;
   }
 
-  // 全座標の範囲計算
-  let allX = [], allY = [];
-  lines.forEach(line =>
-    line.forEach(p => {
-      allX.push(p.x);
-      allY.push(p.y);
-    })
-  );
+  // 全体スケール計算
+  const allX = [], allY = [];
+  lines.forEach(l => l.forEach(p => {
+    allX.push(p.x);
+    allY.push(p.y);
+  }));
 
   const minX = Math.min(...allX);
   const maxX = Math.max(...allX);
   const minY = Math.min(...allY);
   const maxY = Math.max(...allY);
 
-  const padding = 20;
-  const scaleX = (canvas.width - padding * 2) / (maxX - minX);
-  const scaleY = (canvas.height - padding * 2) / (maxY - minY);
-  const scale = Math.min(scaleX, scaleY);
+  const pad = 20;
+  const scale = Math.min(
+    (canvas.width - pad * 2) / (maxX - minX),
+    (canvas.height - pad * 2) / (maxY - minY)
+  );
 
   // 描画
   lines.forEach(pts => {
     ctx.beginPath();
     pts.forEach((p, i) => {
-      const x = padding + (p.x - minX) * scale;
-      const y = padding + (maxY - p.y) * scale; // Y軸反転
+      const x = pad + (p.x - minX) * scale;
+      const y = pad + (maxY - p.y) * scale; // Y反転
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
     ctx.stroke();
   });
-}
+};
 </script>
 
 </body>
