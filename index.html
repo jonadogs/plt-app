@@ -1,4 +1,32 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paste To Shape</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    textarea { width: 100%; height: 200px; }
+    canvas { border: 1px solid #444; margin-top: 20px; width: 100%; max-width: 800px; }
+    button { padding: 10px 20px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h1>Paste To Shape</h1>
+<p>生データを貼り付けて「描画」を押すだけ。</p>
+
+<textarea id="rawInput" placeholder="ここに plt 生データを貼り付け"></textarea><br>
+<button onclick="drawShape()">描画</button>
+
+<canvas id="shapeCanvas" width="800" height="800"></canvas>
+
 <script>
+/* ===============================
+   Paste To Shape : Final Version
+   =============================== */
+
 window.drawShape = function () {
   console.log("描画開始");
 
@@ -10,44 +38,31 @@ window.drawShape = function () {
   ctx.lineWidth = 2;
   ctx.strokeStyle = "#000";
 
-  // =========================
-  // コマンド解析（PU / PD / BZ1）
-  // =========================
-  const regex = /(PU|PD|BZ1),?([-0-9,]*)/g;
+  // BZ1 の座標抽出
+  const regex = /BZ1,([-0-9,]+)/g;
   let match;
-
-  const commands = [];
+  const lines = [];
 
   while ((match = regex.exec(raw)) !== null) {
-    const cmd = match[1];
-    const nums = match[2]
-      ? match[2].split(",").map(Number).filter(n => !isNaN(n))
-      : [];
-
+    const nums = match[1].split(",").map(Number);
     const pts = [];
     for (let i = 0; i < nums.length - 1; i += 2) {
       pts.push({ x: nums[i], y: nums[i + 1] });
     }
-
-    commands.push({ cmd, pts });
+    if (pts.length > 1) lines.push(pts);
   }
 
-  if (commands.length === 0) {
-    alert("座標データが見つかりません");
+  if (lines.length === 0) {
+    alert("BZ1 の座標データが見つかりません");
     return;
   }
 
-  // =========================
-  // スケール計算
-  // =========================
+  // 全体スケール計算
   const allX = [], allY = [];
-
-  commands.forEach(c => {
-    c.pts.forEach(p => {
-      allX.push(p.x);
-      allY.push(p.y);
-    });
-  });
+  lines.forEach(l => l.forEach(p => {
+    allX.push(p.x);
+    allY.push(p.y);
+  }));
 
   const minX = Math.min(...allX);
   const maxX = Math.max(...allX);
@@ -55,54 +70,24 @@ window.drawShape = function () {
   const maxY = Math.max(...allY);
 
   const pad = 20;
-
-  const width = (maxX - minX) || 1;
-  const height = (maxY - minY) || 1;
-
   const scale = Math.min(
-    (canvas.width - pad * 2) / width,
-    (canvas.height - pad * 2) / height
+    (canvas.width - pad * 2) / (maxX - minX),
+    (canvas.height - pad * 2) / (maxY - minY)
   );
 
-  // =========================
   // 描画
-  // =========================
-  ctx.beginPath();
-
-  let penDown = false;
-  let prev = null;
-
-  const DIST_THRESHOLD = 50; // ←調整可能
-
-  commands.forEach(({ cmd, pts }) => {
-    pts.forEach((p) => {
+  lines.forEach(pts => {
+    ctx.beginPath();
+    pts.forEach((p, i) => {
       const x = pad + (p.x - minX) * scale;
-      const y = pad + (maxY - p.y) * scale;
-
-      if (cmd === "PU") {
-        ctx.moveTo(x, y);
-        penDown = false;
-      } else {
-        if (!prev || !penDown) {
-          ctx.moveTo(x, y);
-        } else {
-          const dx = x - prev.x;
-          const dy = y - prev.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (dist > DIST_THRESHOLD) {
-            ctx.moveTo(x, y); // ←遠すぎたら分断
-          } else {
-            ctx.lineTo(x, y);
-          }
-        }
-        penDown = true;
-      }
-
-      prev = { x, y };
+      const y = pad + (maxY - p.y) * scale; // Y反転
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     });
+    ctx.stroke();
   });
-
-  ctx.stroke();
 };
 </script>
+
+</body>
+</html>
